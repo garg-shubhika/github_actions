@@ -1,17 +1,17 @@
-name: Deploy to GitHub Pages
+name: Preview and Deploy to GitHub Pages
 
 on:
-  push:
+  pull_request:
     branches:
       - main
-  pull_request:
+  push:
     branches:
       - main
 
 jobs:
-  build-and-deploy:
+  preview:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-
     steps:
     - name: Check out code
       uses: actions/checkout@v3
@@ -24,10 +24,33 @@ jobs:
     - name: Install dependencies and build
       run: |
         npm install # If you have dependencies
-        npm run build # If you have a build process (optional)
+        npm run build # If you have a build process
+
+    - name: Upload Preview
+      uses: actions/upload-artifact@v3
+      with:
+        name: preview
+        path: ./ # Path to your built site or `index.html`
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+
+    - name: Install dependencies and build
+      run: |
+        npm install # If you have dependencies
+        npm run build # If you have a build process
 
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./ # Adjust this to the directory containing your `index.html`
+        publish_dir: ./ # Directory containing your built site or `index.html`
